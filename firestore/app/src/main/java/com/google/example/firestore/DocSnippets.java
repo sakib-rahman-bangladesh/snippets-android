@@ -1,19 +1,20 @@
 package com.google.example.firestore;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.annotation.WorkerThread;
 import android.util.Log;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.WorkerThread;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
+import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentChange.Type;
-import com.google.firebase.firestore.DocumentListenOptions;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
@@ -23,12 +24,14 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.MetadataChanges;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.Query.Direction;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.ServerTimestamp;
 import com.google.firebase.firestore.SetOptions;
+import com.google.firebase.firestore.Source;
 import com.google.firebase.firestore.Transaction;
 import com.google.firebase.firestore.WriteBatch;
 
@@ -48,7 +51,7 @@ import java.util.concurrent.TimeUnit;
  * Snippets for inclusion in documentation.
  */
 @SuppressWarnings({"unused", "Convert2Lambda"})
-public class DocSnippets implements DocSnippetsInterface {
+public class DocSnippets {
 
     private static final String TAG = "DocSnippets";
 
@@ -66,6 +69,7 @@ public class DocSnippets implements DocSnippetsInterface {
 
         // Write example data
         exampleData();
+        exampleDataCollectionGroup();
 
         // Run all other methods
         addAdaLovelace();
@@ -86,6 +90,7 @@ public class DocSnippets implements DocSnippetsInterface {
         transactions();
         transactionPromise();
         getDocument();
+        getDocumentWithOptions();
         listenToDocument();
         listenToDocumentLocal();
         getMultipleDocs();
@@ -124,7 +129,6 @@ public class DocSnippets implements DocSnippetsInterface {
         deleteCollection(db.collection(path), 50, EXECUTOR);
     }
 
-    @Override
     public void setup() {
         // [START get_firestore_instance]
         FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -138,7 +142,15 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END set_firestore_settings]
     }
 
-    @Override
+    public void setupCacheSize() {
+        // [START fs_setup_cache]
+        FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
+                .setCacheSizeBytes(FirebaseFirestoreSettings.CACHE_SIZE_UNLIMITED)
+                .build();
+        db.setFirestoreSettings(settings);
+        // [END fs_setup_cache]
+    }
+
     public void addAdaLovelace() {
         // [START add_ada_lovelace]
         // Create a new user with a first and last name
@@ -166,7 +178,6 @@ public class DocSnippets implements DocSnippetsInterface {
     }
 
 
-    @Override
     public void addAlanTuring() {
         // [START add_alan_turing]
         // Create a new user with a first, middle, and last name
@@ -194,7 +205,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END add_alan_turing]
     }
 
-    @Override
     public void getAllUsers() {
         // [START get_all_users]
         db.collection("users")
@@ -214,7 +224,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END get_all_users]
     }
 
-    @Override
     public void listenForUsers() {
         // [START listen_for_users]
         // Listen for users born before 1900.
@@ -239,21 +248,18 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END listen_for_users]
     }
 
-    @Override
     public void docReference() {
         // [START doc_reference]
         DocumentReference alovelaceDocumentRef = db.collection("users").document("alovelace");
         // [END doc_reference]
     }
 
-    @Override
     public void collectionReference() {
         // [START collection_reference]
         CollectionReference usersCollectionRef = db.collection("users");
         // [END collection_reference]
     }
 
-    @Override
     public void subcollectionReference() {
         // [START subcollection_reference]
         DocumentReference messageRef = db
@@ -262,7 +268,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END subcollection_reference]
     }
 
-    @Override
     public void docReferenceAlternate() {
         // [START doc_reference_alternate]
         DocumentReference alovelaceDocumentRef = db.document("users/alovelace");
@@ -278,16 +283,18 @@ public class DocSnippets implements DocSnippetsInterface {
         private String country;
         private boolean capital;
         private long population;
+        private List<String> regions;
 
         public City() {}
 
-        public City(String name, String state, String country, boolean capital, long population) {
+        public City(String name, String state, String country, boolean capital, long population, List<String> regions) {
             // [START_EXCLUDE]
             this.name = name;
             this.state = state;
             this.country = country;
             this.capital = capital;
             this.population = population;
+            this.regions = regions;
             // [END_EXCLUDE]
         }
 
@@ -311,10 +318,13 @@ public class DocSnippets implements DocSnippetsInterface {
             return population;
         }
 
+        public List<String> getRegions() {
+            return regions;
+        }
+
     }
     // [END city_class]
 
-    @Override
     public void setDocument() {
         // [START set_document]
         Map<String, Object> city = new HashMap<>();
@@ -345,14 +355,13 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END set_with_id]
     }
 
-    @Override
     public void dataTypes() {
         // [START data_types]
         Map<String, Object> docData = new HashMap<>();
         docData.put("stringExample", "Hello world!");
         docData.put("booleanExample", true);
         docData.put("numberExample", 3.14159265);
-        docData.put("dateExample", new Date());
+        docData.put("dateExample", new Timestamp(new Date()));
         docData.put("listExample", Arrays.asList(1, 2, 3));
         docData.put("nullExample", null);
 
@@ -379,15 +388,14 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END data_types]
     }
 
-    @Override
     public void addCustomClass() {
         // [START add_custom_class]
-        City city = new City("Los Angeles", "CA", "USA", false, 5000000L);
+        City city = new City("Los Angeles", "CA", "USA",
+                false, 5000000L, Arrays.asList("west_coast", "sorcal"));
         db.collection("cities").document("LA").set(city);
         // [END add_custom_class]
     }
 
-    @Override
     public void addDocument() {
         // [START add_document]
         // Add a new document with a generated id.
@@ -412,7 +420,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END add_document]
     }
 
-    @Override
     public void newDocument() {
         // [START new_document]
         Map<String, Object> data = new HashMap<>();
@@ -424,7 +431,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END new_document]
     }
 
-    @Override
     public void updateDocument() {
         // [START update_document]
         DocumentReference washingtonRef = db.collection("cities").document("DC");
@@ -447,7 +453,27 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END update_document]
     }
 
-    @Override
+    public void updateDocumentArray() {
+        // [START update_document_array]
+        DocumentReference washingtonRef = db.collection("cities").document("DC");
+
+        // Atomically add a new region to the "regions" array field.
+        washingtonRef.update("regions", FieldValue.arrayUnion("greater_virginia"));
+
+        // Atomically remove a region from the "regions" array field.
+        washingtonRef.update("regions", FieldValue.arrayRemove("east_coast"));
+        // [END update_document_array]
+    }
+
+    public void updateDocumentIncrement() {
+        // [START update_document_increment]
+        DocumentReference washingtonRef = db.collection("cities").document("DC");
+
+        // Atomically increment the population of the city by 50.
+        washingtonRef.update("population", FieldValue.increment(50));
+        // [END update_document_increment]
+    }
+
     public void updateDocumentNested() {
         // [START update_document_nested]
         // Assume the document contains:
@@ -466,7 +492,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END update_document_nested]
     }
 
-    @Override
     public void setFieldWithMerge() {
         // [START set_field_with_merge]
         // Update one field, creating the document if it does not already exist.
@@ -478,7 +503,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END set_field_with_merge]
     }
 
-    @Override
     public void deleteDocument() {
         // [START delete_document]
         db.collection("cities").document("DC")
@@ -498,7 +522,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END delete_document]
     }
 
-    @Override
     public void transactions() {
         // [START transactions]
         final DocumentReference sfDocRef = db.collection("cities").document("SF");
@@ -507,6 +530,9 @@ public class DocSnippets implements DocSnippetsInterface {
             @Override
             public Void apply(Transaction transaction) throws FirebaseFirestoreException {
                 DocumentSnapshot snapshot = transaction.get(sfDocRef);
+
+                // Note: this could be done without a transaction
+                //       by updating the population using FieldValue.increment()
                 double newPopulation = snapshot.getDouble("population") + 1;
                 transaction.update(sfDocRef, "population", newPopulation);
 
@@ -528,7 +554,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END transactions]
     }
 
-    @Override
     public void transactionPromise() {
         // [START transaction_with_result]
         final DocumentReference sfDocRef = db.collection("cities").document("SF");
@@ -561,7 +586,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END transaction_with_result]
     }
 
-    @Override
     public void writeBatch() {
         // [START write_batch]
         // Get a new write batch
@@ -589,7 +613,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END write_batch]
     }
 
-    @Override
     public void getDocument() {
         // [START get_document]
         DocumentReference docRef = db.collection("cities").document("SF");
@@ -611,7 +634,29 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END get_document]
     }
 
-    @Override
+    public void getDocumentWithOptions() {
+        // [START get_document_options]
+        DocumentReference docRef = db.collection("cities").document("SF");
+
+        // Source can be CACHE, SERVER, or DEFAULT.
+        Source source = Source.CACHE;
+
+        // Get the document, forcing the SDK to use the offline cache
+        docRef.get(source).addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+            @Override
+            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                if (task.isSuccessful()) {
+                    // Document found in the offline cache
+                    DocumentSnapshot document = task.getResult();
+                    Log.d(TAG, "Cached document data: " + document.getData());
+                } else {
+                    Log.d(TAG, "Cached get failed: ", task.getException());
+                }
+            }
+        });
+        // [END get_document_options]
+    }
+
     public void customObjects() {
         // [START custom_objects]
         DocumentReference docRef = db.collection("cities").document("BJ");
@@ -624,7 +669,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END custom_objects]
     }
 
-    @Override
     public void listenToDocument() {
         // [START listen_document]
         final DocumentReference docRef = db.collection("cities").document("SF");
@@ -647,7 +691,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END listen_document]
     }
 
-    @Override
     public void listenToDocumentLocal() {
         // [START listen_document_local]
         final DocumentReference docRef = db.collection("cities").document("SF");
@@ -673,15 +716,11 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END listen_document_local]
     }
 
-    @Override
     public void listenWithMetadata() {
         // [START listen_with_metadata]
         // Listen for metadata changes to the document.
-        DocumentListenOptions options = new DocumentListenOptions()
-                .includeMetadataChanges();
-
         DocumentReference docRef = db.collection("cities").document("SF");
-        docRef.addSnapshotListener(options, new EventListener<DocumentSnapshot>() {
+        docRef.addSnapshotListener(MetadataChanges.INCLUDE, new EventListener<DocumentSnapshot>() {
             @Override
             public void onEvent(@Nullable DocumentSnapshot snapshot,
                                 @Nullable FirebaseFirestoreException e) {
@@ -691,7 +730,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END listen_with_metadata]
     }
 
-    @Override
     public void getMultipleDocs() {
         // [START get_multiple]
         db.collection("cities")
@@ -712,7 +750,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END get_multiple]
     }
 
-    @Override
     public void getAllDocs() {
         // [START get_multiple_all]
         db.collection("cities")
@@ -732,7 +769,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END get_multiple_all]
     }
 
-    @Override
     public void listenToMultiple() {
         // [START listen_multiple]
         db.collection("cities")
@@ -758,7 +794,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END listen_multiple]
     }
 
-    @Override
     public void listenToDiffs() {
         // [START listen_diffs]
         db.collection("cities")
@@ -791,7 +826,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END listen_diffs]
     }
 
-    @Override
     public void listenState() {
         // [START listen_state]
         db.collection("cities")
@@ -820,7 +854,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END listen_state]
     }
 
-    @Override
     public void detachListener() {
         // [START detach_listener]
         Query query = db.collection("cities");
@@ -842,7 +875,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END detach_listener]
     }
 
-    @Override
     public void handleListenErrors() {
         // [START handle_listen_errors]
         db.collection("cities")
@@ -866,7 +898,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END handle_listen_errors]
     }
 
-    @Override
     public void exampleData() {
         // [START example_data]
         CollectionReference cities = db.collection("cities");
@@ -877,6 +908,7 @@ public class DocSnippets implements DocSnippetsInterface {
         data1.put("country", "USA");
         data1.put("capital", false);
         data1.put("population", 860000);
+        data1.put("regions", Arrays.asList("west_coast", "norcal"));
         cities.document("SF").set(data1);
 
         Map<String, Object> data2 = new HashMap<>();
@@ -885,6 +917,7 @@ public class DocSnippets implements DocSnippetsInterface {
         data2.put("country", "USA");
         data2.put("capital", false);
         data2.put("population", 3900000);
+        data2.put("regions", Arrays.asList("west_coast", "socal"));
         cities.document("LA").set(data2);
 
         Map<String, Object> data3 = new HashMap<>();
@@ -893,6 +926,7 @@ public class DocSnippets implements DocSnippetsInterface {
         data3.put("country", "USA");
         data3.put("capital", true);
         data3.put("population", 680000);
+        data3.put("regions", Arrays.asList("east_coast"));
         cities.document("DC").set(data3);
 
         Map<String, Object> data4 = new HashMap<>();
@@ -901,6 +935,7 @@ public class DocSnippets implements DocSnippetsInterface {
         data4.put("country", "Japan");
         data4.put("capital", true);
         data4.put("population", 9000000);
+        data4.put("regions", Arrays.asList("kanto", "honshu"));
         cities.document("TOK").set(data4);
 
         Map<String, Object> data5 = new HashMap<>();
@@ -909,11 +944,67 @@ public class DocSnippets implements DocSnippetsInterface {
         data5.put("country", "China");
         data5.put("capital", true);
         data5.put("population", 21500000);
+        data5.put("regions", Arrays.asList("jingjinji", "hebei"));
         cities.document("BJ").set(data5);
         // [END example_data]
     }
 
-    @Override
+    public void exampleDataCollectionGroup() {
+        // [START fs_collection_group_query_data_setup]
+        CollectionReference citiesRef = db.collection("cities");
+
+        Map<String, Object> ggbData = new HashMap<>();
+        ggbData.put("name", "Golden Gate Bridge");
+        ggbData.put("type", "bridge");
+        citiesRef.document("SF").collection("landmarks").add(ggbData);
+
+        Map<String, Object> lohData = new HashMap<>();
+        lohData.put("name", "Legion of Honor");
+        lohData.put("type", "museum");
+        citiesRef.document("SF").collection("landmarks").add(lohData);
+
+        Map<String, Object> gpData = new HashMap<>();
+        gpData.put("name", "Griffith Park");
+        gpData.put("type", "park");
+        citiesRef.document("LA").collection("landmarks").add(gpData);
+
+        Map<String, Object> tgData = new HashMap<>();
+        tgData.put("name", "The Getty");
+        tgData.put("type", "museum");
+        citiesRef.document("LA").collection("landmarks").add(tgData);
+
+        Map<String, Object> lmData = new HashMap<>();
+        lmData.put("name", "Lincoln Memorial");
+        lmData.put("type", "memorial");
+        citiesRef.document("DC").collection("landmarks").add(lmData);
+
+        Map<String, Object> nasaData = new HashMap<>();
+        nasaData.put("name", "National Air and Space Museum");
+        nasaData.put("type", "museum");
+        citiesRef.document("DC").collection("landmarks").add(nasaData);
+
+        Map<String, Object> upData = new HashMap<>();
+        upData.put("name", "Ueno Park");
+        upData.put("type", "park");
+        citiesRef.document("TOK").collection("landmarks").add(upData);
+
+        Map<String, Object> nmData = new HashMap<>();
+        nmData.put("name", "National Museum of Nature and Science");
+        nmData.put("type", "museum");
+        citiesRef.document("TOK").collection("landmarks").add(nmData);
+
+        Map<String, Object> jpData = new HashMap<>();
+        jpData.put("name", "Jingshan Park");
+        jpData.put("type", "park");
+        citiesRef.document("BJ").collection("landmarks").add(jpData);
+
+        Map<String, Object> baoData = new HashMap<>();
+        baoData.put("name", "Beijing Ancient Observatory");
+        baoData.put("type", "museum");
+        citiesRef.document("BJ").collection("landmarks").add(baoData);
+        // [END fs_collection_group_query_data_setup]
+    }
+
     public void simpleQueries() {
         // [START simple_queries]
         // Create a reference to the cities collection
@@ -932,9 +1023,44 @@ public class DocSnippets implements DocSnippetsInterface {
         citiesRef.whereLessThan("population", 100000);
         citiesRef.whereGreaterThanOrEqualTo("name", "San Francisco");
         // [END example_filters]
+
+        // [START simple_query_not_equal]
+        citiesRef.whereNotEqualTo("capital", false);
+        // [END simple_query_not_equal]
     }
 
-    @Override
+    public void arrayContainsQueries() {
+        // [START array_contains_filter]
+        CollectionReference citiesRef = db.collection("cities");
+
+        citiesRef.whereArrayContains("regions", "west_coast");
+        // [END array_contains_filter]
+    }
+
+    public void arrayContainsAnyQueries() {
+        // [START array_contains_any_filter]
+        CollectionReference citiesRef = db.collection("cities");
+
+        citiesRef.whereArrayContainsAny("regions", Arrays.asList("west_coast", "east_coast"));
+        // [END array_contains_any_filter]
+    }
+
+    public void inQueries() {
+        // [START in_filter]
+        CollectionReference citiesRef = db.collection("cities");
+
+        citiesRef.whereIn("country", Arrays.asList("USA", "Japan"));
+        // [END in_filter]
+
+        // [START not_in_filter]
+        citiesRef.whereNotIn("country", Arrays.asList("USA", "Japan"));
+        // [END not_in_filter]
+
+        // [START in_filter_with_array]
+        citiesRef.whereIn("regions", Arrays.asList(new String[]{"west_coast"}, new String[]{"east_coast"}));
+        // [END in_filter_with_array]
+    }
+
     public void compoundQueries() {
         CollectionReference citiesRef = db.collection("cities");
 
@@ -951,7 +1077,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END valid_range_filters]
     }
 
-    @Override
     public void compoundQueriesInvalid() {
         CollectionReference citiesRef = db.collection("cities");
 
@@ -960,7 +1085,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END invalid_range_filters]
     }
 
-    @Override
     public void orderAndLimit() {
         CollectionReference citiesRef = db.collection("cities");
 
@@ -985,7 +1109,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END valid_filter_and_order]
     }
 
-    @Override
     public void orderAndLimitInvalid() {
         CollectionReference citiesRef = db.collection("cities");
 
@@ -994,7 +1117,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END invalid_filter_and_order]
     }
 
-    @Override
     public void queryStartAtEndAt() {
         // [START query_start_at_single]
         // Get all cities with a population >= 1,000,000, ordered by population,
@@ -1071,6 +1193,22 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END multi_cursor]
     }
 
+    public void collectionGroupQuery() {
+        // [START fs_collection_group_query]
+        db.collectionGroup("landmarks").whereEqualTo("type", "museum").get()
+                .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+                    @Override
+                    public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
+                        // [START_EXCLUDE]
+                        for (QueryDocumentSnapshot snap : queryDocumentSnapshots) {
+                            Log.d(TAG, snap.getId() + " => " + snap.getData());
+                        }
+                        // [END_EXCLUDE]
+                    }
+                });
+        // [END fs_collection_group_query]
+    }
+
     // [START delete_collection]
     /**
      * Delete all documents in a collection. Uses an Executor to perform work on a background
@@ -1128,7 +1266,6 @@ public class DocSnippets implements DocSnippetsInterface {
     }
     // [END delete_collection]
 
-    @Override
     public void toggleOffline() {
         // [START disable_network]
         db.disableNetwork()
@@ -1153,11 +1290,10 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END enable_network]
     }
 
-    @Override
     public void offlineListen(FirebaseFirestore db) {
         // [START offline_listen]
         db.collection("cities").whereEqualTo("state", "CA")
-                .addSnapshotListener(new EventListener<QuerySnapshot>() {
+                .addSnapshotListener(MetadataChanges.INCLUDE, new EventListener<QuerySnapshot>() {
                     @Override
                     public void onEvent(@Nullable QuerySnapshot querySnapshot,
                                         @Nullable FirebaseFirestoreException e) {
@@ -1192,7 +1328,6 @@ public class DocSnippets implements DocSnippetsInterface {
     }
     // [END server_timestamp_annotation]
 
-    @Override
     public void updateWithServerTimestamp() {
         // [START update_with_server_timestamp]
         DocumentReference docRef = db.collection("objects").document("some-id");
@@ -1210,7 +1345,6 @@ public class DocSnippets implements DocSnippetsInterface {
         // [END update_with_server_timestamp]
     }
 
-    @Override
     public void updateDeleteField() {
         // [START update_delete_field]
         DocumentReference docRef = db.collection("cities").document("BJ");

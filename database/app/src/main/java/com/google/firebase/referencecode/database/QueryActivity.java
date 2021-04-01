@@ -15,9 +15,13 @@
  */
 package com.google.firebase.referencecode.database;
 
+import android.content.Context;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -26,7 +30,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
-import com.google.firebase.referencecode.database.interfaces.QueryActivityInterface;
+import com.google.firebase.referencecode.database.models.Comment;
 import com.google.firebase.referencecode.database.models.Message;
 
 /**
@@ -35,7 +39,7 @@ import com.google.firebase.referencecode.database.models.Message;
  *
  * Use {@link MainActivity} to populate the Message data.
  */
-public class QueryActivity extends AppCompatActivity implements QueryActivityInterface {
+public class QueryActivity extends AppCompatActivity {
 
     private static final String TAG = "QueryActivity";
 
@@ -55,12 +59,10 @@ public class QueryActivity extends AppCompatActivity implements QueryActivityInt
         databaseReference = FirebaseDatabase.getInstance().getReference();
     }
 
-    @Override
     public String getUid() {
         return "42";
     }
 
-    @Override
     public void basicListen() {
         // [START basic_listen]
         // Get a reference to Messages and attach a listener
@@ -95,7 +97,6 @@ public class QueryActivity extends AppCompatActivity implements QueryActivityInt
         // [END basic_listen]
     }
 
-    @Override
     public void basicQuery() {
         // [START basic_query]
         // My top posts by number of stars
@@ -115,7 +116,6 @@ public class QueryActivity extends AppCompatActivity implements QueryActivityInt
         // [END basic_query]
     }
 
-    @Override
     public void basicQueryValueListener() {
         String myUserId = getUid();
         Query myTopPostsQuery = databaseReference.child("user-posts").child(myUserId)
@@ -141,7 +141,6 @@ public class QueryActivity extends AppCompatActivity implements QueryActivityInt
         // [END basic_query_value_listener]
     }
 
-    @Override
     public void cleanBasicListener() {
         // Clean up value listener
         // [START clean_basic_listen]
@@ -149,12 +148,107 @@ public class QueryActivity extends AppCompatActivity implements QueryActivityInt
         // [END clean_basic_listen]
     }
 
-    @Override
     public void cleanBasicQuery() {
         // Clean up query listener
         // [START clean_basic_query]
         mMessagesQuery.removeEventListener(mMessagesQueryListener);
         // [END clean_basic_query]
+    }
+
+    public void orderByNested() {
+        // [START rtdb_order_by_nested]
+        // Most viewed posts
+        Query myMostViewedPostsQuery = databaseReference.child("posts")
+                .orderByChild("metrics/views");
+        myMostViewedPostsQuery.addChildEventListener(new ChildEventListener() {
+            // TODO: implement the ChildEventListener methods as documented above
+            // [START_EXCLUDE]
+            @Override
+            public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {}
+
+            @Override
+            public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {}
+
+            @Override
+            public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {}
+
+            @Override
+            public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {}
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {}
+            // [END_EXCLUDE]
+        });
+        // [END rtdb_order_by_nested]
+    }
+
+    private void childEventListenerRecycler() {
+        final Context mContext = this;
+        // [START child_event_listener_recycler]
+        ChildEventListener childEventListener = new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String previousChildName) {
+                Log.d(TAG, "onChildAdded:" + dataSnapshot.getKey());
+
+                // A new comment has been added, add it to the displayed list
+                Comment comment = dataSnapshot.getValue(Comment.class);
+
+                // ...
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String previousChildName) {
+                Log.d(TAG, "onChildChanged:" + dataSnapshot.getKey());
+
+                // A comment has changed, use the key to determine if we are displaying this
+                // comment and if so displayed the changed comment.
+                Comment newComment = dataSnapshot.getValue(Comment.class);
+                String commentKey = dataSnapshot.getKey();
+
+                // ...
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+                Log.d(TAG, "onChildRemoved:" + dataSnapshot.getKey());
+
+                // A comment has changed, use the key to determine if we are displaying this
+                // comment and if so remove it.
+                String commentKey = dataSnapshot.getKey();
+
+                // ...
+            }
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String previousChildName) {
+                Log.d(TAG, "onChildMoved:" + dataSnapshot.getKey());
+
+                // A comment has changed position, use the key to determine if we are
+                // displaying this comment and if so move it.
+                Comment movedComment = dataSnapshot.getValue(Comment.class);
+                String commentKey = dataSnapshot.getKey();
+
+                // ...
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.w(TAG, "postComments:onCancelled", databaseError.toException());
+                Toast.makeText(mContext, "Failed to load comments.",
+                        Toast.LENGTH_SHORT).show();
+            }
+        };
+        databaseReference.addChildEventListener(childEventListener);
+        // [END child_event_listener_recycler]
+    }
+
+    private void recentPostsQuery() {
+        // [START recent_posts_query]
+        // Last 100 posts, these are automatically the 100 most recent
+        // due to sorting by push() keys
+        Query recentPostsQuery = databaseReference.child("posts")
+                .limitToFirst(100);
+        // [END recent_posts_query]
     }
 
     @Override

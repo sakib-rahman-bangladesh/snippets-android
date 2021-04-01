@@ -1,18 +1,24 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
 
 android {
-    compileSdkVersion 27
-    buildToolsVersion '27.0.2'
+    compileSdkVersion 30
 
     defaultConfig {
         applicationId "com.google.example.firestore"
         minSdkVersion 16
-        targetSdkVersion 27
+        targetSdkVersion 30
         versionCode 1
         versionName "1.0"
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        multiDexEnabled true
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
+
+    lintOptions {
+        warning 'InvalidPackage'
+    }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -22,23 +28,28 @@ android {
 }
 
 repositories {
-    jcenter()
     google()
+    jcenter()
     mavenLocal()
 }
 
 dependencies {
-    compile "com.android.support:support-v4:27.1.0"
-    compile "com.android.support:appcompat-v7:27.1.0"
-    compile "com.android.support.constraint:constraint-layout:1.0.2"
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    implementation 'androidx.appcompat:appcompat:1.2.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
+    implementation 'androidx.multidex:multidex:2.0.1'
 
     // Firestore
-    compile "com.google.firebase:firebase-firestore:12.0.1"
+    implementation "com.google.firebase:firebase-firestore-ktx:22.1.1"
 
     // Firebase / Play Services
-    compile "com.google.firebase:firebase-auth:12.0.1"
-    compile "com.google.android.gms:play-services-auth:12.0.1"
-    compile "org.jetbrains.kotlin:kotlin-stdlib-jre7:1.2.31"
+    implementation "com.google.firebase:firebase-auth:20.0.3"
+    implementation "com.google.android.gms:play-services-auth:19.0.0"
+    implementation "com.google.firebase:firebase-functions-ktx:19.2.0"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.4.31"
+
+    // GeoFire (for Geoqueries solution)
+    implementation "com.firebase:geofire-android-common:3.1.0"
 }
 
 apply plugin: 'com.google.gms.google-services'

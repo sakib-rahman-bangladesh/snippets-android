@@ -7,3 +7,7 @@ build/
 *.apk
 *.aar
 *.zip
+.vscode
+.project
+.settings
+.classpath
